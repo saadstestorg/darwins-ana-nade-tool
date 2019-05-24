@@ -1,0 +1,602 @@
+rule("SETUP")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, U, 10);
+	}
+}
+
+rule("ULTIMATE RECHARGE")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Button Held(Event Player, Ultimate) == True;
+	}
+
+	actions
+	{
+		Set Ultimate Charge(Event Player, 100);
+	}
+}
+
+rule("-------------HUD-------------")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("HUD FOR POSITION AND ANGLES AND RAY")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	actions
+	{
+		Create HUD Text(Event Player, Position Of(Event Player), Null, Null, Top, 0.050, White, White, White, String);
+		Create HUD Text(Event Player, Multiply(Vertical Facing Angle Of(Event Player), -1.000), Null, Null, Top, 0.100, Green, White,
+			White, String);
+		Create HUD Text(Event Player, Horizontal Facing Angle Of(Event Player), Null, Null, Top, 0.100, Red, White, White, String);
+		Create HUD Text(Event Player, String("{0} {1} {2}", String("Wall", Null, Null, Null), String("Warning", Null, Null, Null), String(
+			"{0} m", Distance Between(Eye Position(Event Player), Player Variable(Event Player, F)), Null, Null)), Null, Null, Left, 0,
+			White, White, White, String);
+	}
+}
+
+rule("HUD FOR TIME AND RANGE")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	actions
+	{
+		Create HUD Text(Event Player, String("{0} {1} {2}", String("Fly", Null, Null, Null), String("Time", Null, Null, Null), String(
+			"{0} sec", Player Variable(Event Player, T), Null, Null)), Null, Null, Left, 0, Purple, White, Purple, String);
+		Create HUD Text(Event Player, Player Variable(Event Player, R), Null, Null, Right, 0, Purple, White, White, String);
+	}
+}
+
+rule("------------CONSTANTS---------------")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("ZARYA GRAV CONSTANTS")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Hero Of(Event Player) == Hero(Zarya);
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, S, 25);
+		Set Player Variable(Event Player, H, 1.500);
+		Set Player Variable(Event Player, G, 9.806);
+		Set Player Variable(Event Player, L, 6);
+	}
+}
+
+rule("ORISA SHIELD CONSTANTS")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Hero Of(Event Player) == Hero(Orisa);
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, S, 25);
+		Set Player Variable(Event Player, H, 1.500);
+		Set Player Variable(Event Player, G, 9.806);
+		Set Player Variable(Event Player, L, 3);
+	}
+}
+
+rule("ANA CONSTANTS")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Hero Of(Event Player) == Hero(Ana);
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, S, 30);
+		Set Player Variable(Event Player, H, 1);
+		Set Player Variable(Event Player, G, 9.806);
+		Set Player Variable(Event Player, L, 4);
+	}
+}
+
+rule("----------MATH---------------")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("CALCULATE TRAJECTORY")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	actions
+	{
+		Skip If(Compare(Hero Of(Event Player), !=, Hero(Ana)), 2);
+		Set Player Variable(Event Player, M, Min(Max(Multiply(Vertical Facing Angle Of(Event Player), -1.000), 0), 8));
+		Set Player Variable(Event Player, G, Add(1, Multiply(8.806, Divide(Player Variable(Event Player, M), 8))));
+		Set Player Variable(Event Player, A, Multiply(Player Variable(Event Player, S), Sine From Degrees(Vertical Facing Angle Of(
+			Event Player))));
+		Set Player Variable(Event Player, B, Square Root(Multiply(Player Variable(Event Player, A), Player Variable(Event Player, A))));
+		Set Player Variable(Event Player, C, Multiply(2, Multiply(Player Variable(Event Player, G), Player Variable(Event Player, H))));
+		Set Player Variable(Event Player, T, Divide(Multiply(Multiply(2, Player Variable(Event Player, S)), Sine From Degrees(Multiply(
+			-1.000, Vertical Facing Angle Of(Event Player)))), Player Variable(Event Player, G)));
+		Set Player Variable(Event Player, O, Multiply(Player Variable(Event Player, S), Cosine From Degrees(Vertical Facing Angle Of(
+			Event Player))));
+		Set Player Variable(Event Player, R, Multiply(Player Variable(Event Player, O), Player Variable(Event Player, T)));
+		Set Global Variable(L, Add(Position Of(Event Player), Multiply(Normalize(Multiply(Facing Direction Of(Event Player), Vector(1, 0,
+			1))), Player Variable(Event Player, R))));
+		Set Global Variable(H, Ray Cast Hit Position(Add(Global Variable(L), Multiply(100, Up)), Global Variable(L), All Players(
+			All Teams), Event Player, True));
+		Wait(0.016, Ignore Condition);
+		Loop;
+	}
+}
+
+rule("--------------EFFECTS------------------")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("LANDING POINT EFFECT")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Using Ability 2(Event Player) == True;
+	}
+
+	actions
+	{
+		Destroy Effect(Player Variable(Event Player, E));
+		Destroy Effect(Player Variable(Event Player, F));
+		Set Global Variable(P, Global Variable(L));
+		Create Effect(All Players(All Teams), Ring, Green, Add(Global Variable(P), Vector(0, 0, 0)), Player Variable(Event Player, L),
+			Visible To Position and Radius);
+		Set Player Variable(Event Player, E, Last Created Entity);
+		Create Effect(All Players(All Teams), Sphere, Green, Add(Player Variable(Event Player, P), Vector(0, 0.500, 0)), 0.200,
+			Visible To Position and Radius);
+		Set Player Variable(Event Player, F, Last Created Entity);
+	}
+}
+
+rule("AIM EFFECT")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	actions
+	{
+		Create Effect(All Players(All Teams), Sphere, Purple, Add(Global Variable(L), Vector(0, 0.500, 0)), 0.200,
+			Visible To Position and Radius);
+		Create Effect(All Players(All Teams), Ring, Purple, Add(Global Variable(L), Vector(0, 0, 0)), Player Variable(Event Player, L),
+			Visible To Position and Radius);
+		Create Effect(All Players(All Teams), Ring, Purple, Add(Global Variable(L), Vector(0, -1.500, 0)), Player Variable(Event Player,
+			L), Visible To Position and Radius);
+		Create Effect(All Players(All Teams), Ring, Purple, Add(Global Variable(L), Vector(0, 1.500, 0)), Player Variable(Event Player, L),
+			Visible To Position and Radius);
+		Create Effect(All Players(All Teams), Sphere, Purple, Add(Global Variable(H), Vector(0, 0.500, 0)), 0.200,
+			Visible To Position and Radius);
+	}
+}
+
+rule("RAY CAST COLLISION CHECK")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, F, Ray Cast Hit Position(Eye Position(Event Player), Add(Eye Position(Event Player), Multiply(
+			Facing Direction Of(Event Player), 100)), All Players(All Teams), Event Player, True));
+		Wait(0.016, Ignore Condition);
+		Loop;
+	}
+}
+
+rule("-------------CAMERAS--------------")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("START cAMERA 1")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Button Held(Event Player, Interact) == True;
+		Player Variable(Event Player, Z) != True;
+		Vertical Facing Angle Of(Event Player) < 0;
+	}
+
+	actions
+	{
+		Wait(0.250, Ignore Condition);
+		Set Player Variable(Event Player, Z, True);
+		Start Camera(Event Player, Add(Global Variable(L), Add(Multiply(Normalize(Multiply(Facing Direction Of(Event Player), Vector(
+			-1.000, 0, -1.000))), 10), Multiply(Up, Player Variable(Event Player, U)))), Add(Global Variable(L), Vector(0, 1, 0)), 25);
+		Disallow Button(Event Player, Crouch);
+		Disallow Button(Event Player, Jump);
+	}
+}
+
+rule("LEAVE CAMERA 1")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Button Held(Event Player, Interact) == True;
+		Player Variable(Event Player, Z) == True;
+	}
+
+	actions
+	{
+		Wait(0.250, Ignore Condition);
+		Set Player Variable(Event Player, Z, False);
+		Stop Camera(Event Player);
+		Allow Button(Event Player, Crouch);
+		Allow Button(Event Player, Jump);
+	}
+}
+
+rule("CROUCH TO ZOOMOUT")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Button Held(Event Player, Crouch) == True;
+	}
+
+	actions
+	{
+		Modify Player Variable(Event Player, U, Subtract, 0.200);
+		Wait(0.016, Ignore Condition);
+		Loop If Condition Is True;
+	}
+}
+
+rule("JUMP TO ZOOMIN")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Button Held(Event Player, Jump) == True;
+	}
+
+	actions
+	{
+		Modify Player Variable(Event Player, U, Add, 0.200);
+		Wait(0.016, Ignore Condition);
+		Loop If Condition Is True;
+	}
+}
+
+rule("----------LYM---------COLLISION MARKER--------------")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("Loop")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Hero Of(Event Player) == Hero(Ana);
+	}
+
+	actions
+	{
+		Skip If(Or(Compare(Player Variable(Event Player, I), <, 6.500), Player Variable(Event Player, W)), 1);
+		Set Player Variable(Event Player, I, 0);
+		Set Player Variable(Event Player, J, Add(Add(Position Of(Event Player), Up), Add(Multiply(Facing Direction Of(Event Player),
+			Multiply(40, Player Variable(Event Player, I))), Multiply(Multiply(Down, 8.750), Raise To Power(Player Variable(Event Player,
+			I), 2)))));
+		Set Player Variable(Event Player, K, Add(Add(Position Of(Event Player), Up), Add(Multiply(Facing Direction Of(Event Player),
+			Multiply(40, Add(Player Variable(Event Player, I), 0.050))), Multiply(Multiply(Down, 8.750), Raise To Power(Add(
+			Player Variable(Event Player, I), 0.050), 2)))));
+		Skip If(Is In Line of Sight(Player Variable(Event Player, J), Player Variable(Event Player, K), Barriers Do Not Block LOS), 4);
+		Set Player Variable(Event Player, N, Ray Cast Hit Position(Player Variable(Event Player, J), Player Variable(Event Player, K),
+			Null, Null, True));
+		Set Player Variable(Event Player, D, Player Variable(Event Player, I));
+		Skip If(Player Variable(Event Player, W), 1);
+		Set Player Variable(Event Player, I, 0);
+		Wait(0.016, Ignore Condition);
+		Loop;
+	}
+}
+
+rule("Setup")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Hero Of(Event Player) == Hero(Ana);
+	}
+
+	actions
+	{
+		Chase Player Variable At Rate(Event Player, I, 20, 3, Destination and Rate);
+		Create Effect(Filtered Array(All Players(All Teams), Compare(Player Variable(Event Player, N), !=, 0)), Sphere, Red,
+			Player Variable(Event Player, N), 0.500, Visible To Position and Radius);
+		Create Effect(Filtered Array(All Players(All Teams), Compare(Player Variable(Event Player, P), !=, 0)), Sphere, Green,
+			Player Variable(Event Player, P), 0.500, Visible To Position and Radius);
+	}
+}
+
+rule("Throw")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Button Held(Event Player, Ability 2) == True;
+		Hero Of(Event Player) == Hero(Ana);
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, P, Player Variable(Event Player, N));
+		Abort If(Not(Player Variable(Event Player, Q)));
+		Set Player Variable(Event Player, I, 0);
+		Chase Player Variable At Rate(Event Player, I, 6.500, 1, Destination and Rate);
+		Start Camera(Event Player, Add(Add(Position Of(Event Player), Up), Add(Multiply(Facing Direction Of(Event Player), Multiply(40,
+			Min(Subtract(Player Variable(Event Player, I), 0.250), Subtract(Player Variable(Event Player, D), 0.500)))), Multiply(Multiply(
+			Down, 8.750), Raise To Power(Min(Subtract(Player Variable(Event Player, I), 0.250), Subtract(Player Variable(Event Player, D),
+			0.500)), 2)))), Player Variable(Event Player, K), 0);
+		Set Player Variable(Event Player, W, True);
+		Wait(Add(Player Variable(Event Player, D), 1.500), Ignore Condition);
+		Stop Camera(Event Player);
+		Chase Player Variable At Rate(Event Player, I, 6.500, 3, Destination and Rate);
+		Set Player Variable(Event Player, W, False);
+		Allow Button(Event Player, Crouch);
+		Allow Button(Event Player, Jump);
+	}
+}
+
+rule("Toggle chase cam")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Is Button Held(Event Player, Ultimate) == True;
+		Hero Of(Event Player) == Hero(Ana);
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, Q, Not(Player Variable(Event Player, Q)));
+	}
+}
+
+rule("--------------------NEW CONSTANTS---------------------")
+{
+	event
+	{
+		Ongoing - Global;
+	}
+}
+
+rule("ASHE DYNAMITE CONSTANTS")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Hero Of(Event Player) == Hero(Ashe);
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, S, 27);
+		Set Player Variable(Event Player, H, 1.200);
+		Set Player Variable(Event Player, G, 9.806);
+		Set Player Variable(Event Player, L, 5);
+	}
+}
+
+rule("BAPTISTE HEALING CONSTANTS")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Hero Of(Event Player) == Hero(Baptiste);
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, S, 40);
+		Set Player Variable(Event Player, H, 1.200);
+		Set Player Variable(Event Player, G, 9.806);
+		Set Player Variable(Event Player, L, 3);
+	}
+}
+
+rule("MEI ULT CONSTANTS")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Hero Of(Event Player) == Hero(Mei);
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, S, 19.500);
+		Set Player Variable(Event Player, H, 0);
+		Set Player Variable(Event Player, G, 9.806);
+		Set Player Variable(Event Player, L, 10);
+	}
+}
+
+rule("TORB ULT CONSTANTS")
+{
+	event
+	{
+		Ongoing - Each Player;
+		All;
+		All;
+	}
+
+	conditions
+	{
+		Hero Of(Event Player) == Hero(Torbjörn);
+	}
+
+	actions
+	{
+		Set Player Variable(Event Player, S, 40);
+		Set Player Variable(Event Player, H, 0.500);
+		Set Player Variable(Event Player, G, 30);
+		Set Player Variable(Event Player, L, 3);
+	}
+}
